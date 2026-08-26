@@ -6,6 +6,7 @@ import {
   Flag,
   GraduationCap,
   LayoutDashboard,
+  Megaphone,
   Users,
   CalendarDays,
 } from "lucide-react";
@@ -15,6 +16,7 @@ const NAV = [
   { href: "/dashboard/users", label: "Users", icon: Users, exact: false },
   { href: "/dashboard/meetups", label: "Meetups", icon: CalendarDays, exact: false },
   { href: "/dashboard/reports", label: "Reports", icon: Flag, exact: false },
+  { href: "/dashboard/broadcast", label: "Broadcast", icon: Megaphone, exact: false },
   { href: "/dashboard/lessons", label: "Lessons", icon: GraduationCap, exact: false },
 ] as const;
 
