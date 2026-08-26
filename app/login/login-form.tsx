@@ -2,14 +2,25 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAppOrigin } from "@/lib/app-url";
+import { getAppOrigin, safeNextPath } from "@/lib/app-url";
 import { createClient } from "@/lib/supabase/client";
+
+const AUTH_NEXT_COOKIE = "rabt_admin_auth_next";
 
 type AuthMode = "password" | "magic";
 
 type LoginFormProps = {
   nextPath: string;
 };
+
+function setAuthNextCookie(path: string) {
+  const safe = safeNextPath(path);
+  document.cookie = `${AUTH_NEXT_COOKIE}=${encodeURIComponent(safe)}; path=/; SameSite=Lax; Max-Age=3600`;
+}
+
+function clearAuthNextCookie() {
+  document.cookie = `${AUTH_NEXT_COOKIE}=; path=/; SameSite=Lax; Max-Age=0`;
+}
 
 export function LoginForm({ nextPath }: LoginFormProps) {
   const router = useRouter();
@@ -22,14 +33,22 @@ export function LoginForm({ nextPath }: LoginFormProps) {
   async function onGoogleSignIn() {
     setBusy(true);
     setMessage(null);
-    const supabase = createClient();
     const adminOrigin = getAppOrigin();
+    if (!adminOrigin) {
+      setMessage("Could not resolve admin origin. Reload and try again.");
+      setBusy(false);
+      return;
+    }
+
+    const supabase = createClient();
+    clearAuthNextCookie();
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${adminOrigin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+          // Exact allowlist match — no query string on redirectTo.
+          redirectTo: `${adminOrigin}/auth/callback`,
         },
       });
       if (error) {
@@ -63,10 +82,16 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         return;
       }
 
+      if (!adminOrigin) {
+        setMessage("Could not resolve admin origin. Reload and try again.");
+        return;
+      }
+
+      clearAuthNextCookie();
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${adminOrigin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+          emailRedirectTo: `${adminOrigin}/auth/callback`,
         },
       });
       if (error) {
@@ -88,14 +113,22 @@ export function LoginForm({ nextPath }: LoginFormProps) {
     }
     setBusy(true);
     setMessage(null);
-    const supabase = createClient();
     const adminOrigin = getAppOrigin();
+    if (!adminOrigin) {
+      setMessage("Could not resolve admin origin. Reload and try again.");
+      setBusy(false);
+      return;
+    }
+
+    const supabase = createClient();
+    setAuthNextCookie("/auth/update-password");
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${adminOrigin}/auth/callback?next=${encodeURIComponent("/auth/update-password")}`,
+        redirectTo: `${adminOrigin}/auth/callback`,
       });
       if (error) {
+        clearAuthNextCookie();
         setMessage(error.message);
         return;
       }
