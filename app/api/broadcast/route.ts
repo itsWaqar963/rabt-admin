@@ -81,6 +81,8 @@ export async function POST(request: Request) {
     ok: true,
     sent: result.sent,
     failed: result.failed,
+    pruned: result.pruned,
+    sampleErrors: result.sampleErrors,
     broadcastId: result.broadcastId,
   });
 }

@@ -126,12 +126,22 @@ export function BroadcastForm() {
       </button>
 
       {result?.ok ? (
-        <p
+        <div
           role="status"
-          className="rounded-md border border-emerald-900/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200"
+          className="space-y-2 rounded-md border border-emerald-900/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200"
         >
-          Sent {result.sent} · failed {result.failed}
-        </p>
+          <p>
+            Sent {result.sent} · failed {result.failed} · pruned{" "}
+            {result.pruned}
+          </p>
+          {result.sampleErrors.length > 0 ? (
+            <ul className="list-disc space-y-0.5 pl-4 text-xs text-amber-200/90">
+              {result.sampleErrors.map((err) => (
+                <li key={err}>{err}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       ) : null}
       {result && !result.ok ? (
         <p

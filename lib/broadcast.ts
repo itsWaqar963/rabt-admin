@@ -4,7 +4,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type BroadcastTarget = "all" | "active";
 
 export type SendBroadcastResult =
-  | { ok: true; sent: number; failed: number; broadcastId: string }
+  | {
+      ok: true;
+      sent: number;
+      failed: number;
+      pruned: number;
+      sampleErrors: string[];
+      broadcastId: string;
+    }
   | { ok: false; error: string; status?: number };
 
 export function parseBroadcastTarget(raw: unknown): BroadcastTarget | null {
@@ -80,6 +87,8 @@ export async function executeBroadcast(
 
   let sent = 0;
   let failed = 0;
+  let pruned = 0;
+  let sampleErrors: string[] = [];
 
   try {
     const res = await fetch(`${pwaUrl}/api/admin-broadcast`, {
@@ -101,6 +110,8 @@ export async function executeBroadcast(
     const json = (await res.json().catch(() => ({}))) as {
       sent?: number;
       failed?: number;
+      pruned?: number;
+      sampleErrors?: unknown;
       error?: string;
     };
 
@@ -114,10 +125,16 @@ export async function executeBroadcast(
 
     sent = typeof json.sent === "number" ? json.sent : 0;
     failed = typeof json.failed === "number" ? json.failed : 0;
+    pruned = typeof json.pruned === "number" ? json.pruned : 0;
+    sampleErrors = Array.isArray(json.sampleErrors)
+      ? json.sampleErrors
+          .filter((e): e is string => typeof e === "string")
+          .slice(0, 5)
+      : [];
 
     await supabase
       .from("broadcasts")
-      .update({ push_sent: sent, push_failed: failed })
+      .update({ push_sent: sent, push_failed: failed + pruned })
       .eq("id", broadcastId);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Push request failed";
@@ -125,5 +142,5 @@ export async function executeBroadcast(
   }
 
   revalidatePath("/dashboard/broadcast");
-  return { ok: true, sent, failed, broadcastId };
+  return { ok: true, sent, failed, pruned, sampleErrors, broadcastId };
 }
