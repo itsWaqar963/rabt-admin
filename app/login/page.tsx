@@ -1,3 +1,4 @@
+import { safeNextPath } from "@/lib/app-url";
 import { LoginForm } from "./login-form";
 
 type LoginPageProps = {
@@ -37,7 +38,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
         ) : null}
 
-        <LoginForm nextPath={params.next ?? "/dashboard"} />
+        <LoginForm nextPath={safeNextPath(params.next)} />
       </div>
     </main>
   );

@@ -9,6 +9,14 @@ export async function middleware(request: NextRequest) {
   const isDashboard = pathname.startsWith("/dashboard");
   const isLogin = pathname === "/login";
   const isRoot = pathname === "/";
+  const isUpdatePassword = pathname === "/auth/update-password";
+
+  if (isUpdatePassword && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("error", "auth");
+    return NextResponse.redirect(url);
+  }
 
   if (isRoot) {
     if (!user) {
