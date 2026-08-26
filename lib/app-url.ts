@@ -1,12 +1,21 @@
 /**
  * Canonical admin origin (no trailing slash).
- * Prefers NEXT_PUBLIC_APP_URL, then request/browser origin.
+ * Client: window.location.origin (keeps magic-link redirects on admin host).
+ * Server: APP_URL, then https://VERCEL_URL, then optional request origin.
+ * APP_URL is private (not NEXT_PUBLIC_*) so it is not forced into the client bundle.
  */
 export function getAppOrigin(requestOrigin?: string): string {
-  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  const fromEnv = process.env.APP_URL?.trim().replace(/\/$/, "");
   if (fromEnv) return fromEnv;
+
+  const vercelHost = process.env.VERCEL_URL?.trim().replace(/\/$/, "");
+  if (vercelHost) return `https://${vercelHost}`;
+
   if (requestOrigin) return requestOrigin.replace(/\/$/, "");
-  if (typeof window !== "undefined") return window.location.origin;
   return "";
 }
 
