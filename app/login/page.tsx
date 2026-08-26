@@ -25,7 +25,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
           <h1 className="text-2xl font-semibold text-zinc-50">Sign in</h1>
           <p className="text-sm text-zinc-400">
-            Email + password or magic link. Must be listed in admin_users.
+            Google preferred; password or magic link also work. Must be listed
+            in admin_users.
           </p>
         </div>
 
