@@ -1,11 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
-import { fetchDashboardMetrics } from "@/lib/metrics";
 import { MetricsPanel } from "@/components/dashboard/metrics-panel";
 
-export default async function DashboardHomePage() {
-  const supabase = await createClient();
-  const result = await fetchDashboardMetrics(supabase);
-
+export default function DashboardHomePage() {
   return (
     <div className="space-y-4">
       <div>
@@ -14,10 +9,7 @@ export default async function DashboardHomePage() {
           Live ops overview from Supabase.
         </p>
       </div>
-      <MetricsPanel
-        initialMetrics={result.ok ? result.metrics : null}
-        initialError={result.ok ? null : result.error}
-      />
+      <MetricsPanel />
     </div>
   );
 }

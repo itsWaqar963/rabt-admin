@@ -1,17 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { Users, CalendarDays, Flag } from "lucide-react";
-
-type Metric = {
-  label: string;
-  value: string;
-  icon: typeof Users;
-};
-
-const METRICS: Metric[] = [
-  { label: "Users", value: "—", icon: Users },
-  { label: "Meetups", value: "—", icon: CalendarDays },
-  { label: "Reports", value: "—", icon: Flag },
-];
+import { useMetricsContext } from "@/components/dashboard/metrics-provider";
 
 type HeaderProps = {
   email: string | undefined;
@@ -19,10 +10,30 @@ type HeaderProps = {
 };
 
 export function Header({ email, children }: HeaderProps) {
+  const { metrics } = useMetricsContext();
+
+  const chips = [
+    {
+      label: "Users",
+      value: metrics ? metrics.totalUsers.toLocaleString() : "—",
+      icon: Users,
+    },
+    {
+      label: "Meetups",
+      value: metrics ? metrics.totalMeetups.toLocaleString() : "—",
+      icon: CalendarDays,
+    },
+    {
+      label: "Reports",
+      value: metrics ? metrics.openReports.toLocaleString() : "—",
+      icon: Flag,
+    },
+  ] as const;
+
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-900/60 px-5 py-3">
       <div className="flex flex-wrap gap-3">
-        {METRICS.map((m) => {
+        {chips.map((m) => {
           const Icon = m.icon;
           return (
             <div
