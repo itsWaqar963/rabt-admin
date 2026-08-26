@@ -1,10 +1,33 @@
-export default function MeetupsPage() {
+import { createClient } from "@/lib/supabase/server";
+import {
+  ErrorBanner,
+  PageHeader,
+} from "@/components/dashboard/table-shell";
+import {
+  MeetupsTable,
+  type MeetupRow,
+} from "@/components/dashboard/meetups-table";
+
+export default async function MeetupsPage() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("meetups")
+    .select(
+      "id, title, description, venue, city, country, host_id, date, time, created_at",
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  const rows = (data ?? []) as MeetupRow[];
+
   return (
-    <div className="space-y-2">
-      <h1 className="text-lg font-semibold text-zinc-50">Meetups</h1>
-      <p className="text-sm text-zinc-400">
-        Meetup moderation queue — stub.
-      </p>
+    <div>
+      <PageHeader
+        title="Meetups"
+        subtitle={`${rows.length} meetup${rows.length === 1 ? "" : "s"} (max 200)`}
+      />
+      {error ? <ErrorBanner message={error.message} /> : null}
+      {!error ? <MeetupsTable rows={rows} /> : null}
     </div>
   );
 }
