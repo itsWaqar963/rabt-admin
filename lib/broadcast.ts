@@ -1,50 +1,58 @@
-"use server";
-
 import { revalidatePath } from "next/cache";
-import { verifyIsAdmin } from "@/lib/admin";
-import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type BroadcastTarget = "all" | "active";
 
 export type SendBroadcastResult =
   | { ok: true; sent: number; failed: number; broadcastId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; status?: number };
 
-function parseTarget(raw: FormDataEntryValue | null): BroadcastTarget | null {
+export function parseBroadcastTarget(raw: unknown): BroadcastTarget | null {
   if (raw === "all" || raw === "active") return raw;
   return null;
 }
 
-export async function sendBroadcast(
-  formData: FormData,
+function assertNeverTarget(value: never): never {
+  throw new Error(`Unhandled broadcast target: ${String(value)}`);
+}
+
+/** Exhaustive guard — extend when new BroadcastTarget variants are added. */
+export function assertBroadcastTarget(target: BroadcastTarget): void {
+  switch (target) {
+    case "all":
+    case "active":
+      return;
+    default:
+      assertNeverTarget(target);
+  }
+}
+
+export async function executeBroadcast(
+  supabase: SupabaseClient,
+  userId: string,
+  input: { title: string; body: string; target: BroadcastTarget },
 ): Promise<SendBroadcastResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Not signed in" };
+  const title = input.title.trim();
+  const body = input.body.trim();
+  const { target } = input;
 
-  const admin = await verifyIsAdmin(supabase);
-  if (!admin) return { ok: false, error: "Not an admin" };
-
-  const title = String(formData.get("title") ?? "").trim();
-  const body = String(formData.get("body") ?? "").trim();
-  const target = parseTarget(formData.get("target"));
+  assertBroadcastTarget(target);
 
   if (!title || !body) {
-    return { ok: false, error: "Title and message required" };
-  }
-  if (!target) {
-    return { ok: false, error: "Target must be All Users or Active Users" };
+    return { ok: false, error: "Title and message required", status: 400 };
   }
 
   const pwaUrl = process.env.PWA_APP_URL?.trim().replace(/\/$/, "");
   const secret = process.env.ADMIN_BROADCAST_SECRET?.trim();
   if (!pwaUrl) {
-    return { ok: false, error: "PWA_APP_URL not configured" };
+    return { ok: false, error: "PWA_APP_URL not configured", status: 500 };
   }
   if (!secret) {
-    return { ok: false, error: "ADMIN_BROADCAST_SECRET not configured" };
+    return {
+      ok: false,
+      error: "ADMIN_BROADCAST_SECRET not configured",
+      status: 500,
+    };
   }
 
   const { data: row, error: insertErr } = await supabase
@@ -53,7 +61,7 @@ export async function sendBroadcast(
       title,
       body,
       target,
-      created_by: user.id,
+      created_by: userId,
     })
     .select("id")
     .single();
@@ -64,6 +72,7 @@ export async function sendBroadcast(
       error: insertErr?.message.includes("broadcasts")
         ? "Broadcasts table missing — apply migration 015_broadcasts.sql"
         : insertErr?.message ?? "Insert failed",
+      status: 500,
     };
   }
 
@@ -99,6 +108,7 @@ export async function sendBroadcast(
       return {
         ok: false,
         error: json.error ?? `Push API HTTP ${res.status}`,
+        status: 502,
       };
     }
 
@@ -111,7 +121,7 @@ export async function sendBroadcast(
       .eq("id", broadcastId);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Push request failed";
-    return { ok: false, error: msg };
+    return { ok: false, error: msg, status: 502 };
   }
 
   revalidatePath("/dashboard/broadcast");

@@ -1,28 +1,63 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import {
-  sendBroadcast,
-  type SendBroadcastResult,
-} from "@/lib/broadcast";
+import { useState } from "react";
+import type { SendBroadcastResult } from "@/lib/broadcast";
 
 export function BroadcastForm() {
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const [result, setResult] = useState<SendBroadcastResult | null>(null);
 
   return (
     <form
       className="space-y-4 rounded-md border border-zinc-800 bg-zinc-900/50 p-4"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         const form = e.currentTarget;
         const fd = new FormData(form);
+        const title = String(fd.get("title") ?? "").trim();
+        const body = String(fd.get("body") ?? "").trim();
+        const target = String(fd.get("target") ?? "all");
+
         setResult(null);
-        startTransition(async () => {
-          const res = await sendBroadcast(fd);
-          setResult(res);
-          if (res.ok) form.reset();
-        });
+        setPending(true);
+        try {
+          const res = await fetch("/api/broadcast", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ title, body, target }),
+          });
+
+          const json = (await res.json().catch(() => null)) as
+            | SendBroadcastResult
+            | null;
+
+          if (!json || typeof json !== "object") {
+            setResult({
+              ok: false,
+              error: `Request failed (HTTP ${res.status})`,
+            });
+            return;
+          }
+
+          if (!json.ok) {
+            setResult({
+              ok: false,
+              error:
+                "error" in json && typeof json.error === "string"
+                  ? json.error
+                  : `Request failed (HTTP ${res.status})`,
+            });
+            return;
+          }
+
+          setResult(json);
+          form.reset();
+        } catch {
+          setResult({ ok: false, error: "Network error — try again" });
+        } finally {
+          setPending(false);
+        }
       }}
     >
       <div className="space-y-1.5">
