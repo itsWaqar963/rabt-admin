@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
+  FileText,
   Flag,
   GraduationCap,
+  Image,
   LayoutDashboard,
   Megaphone,
   Users,
-  CalendarDays,
 } from "lucide-react";
 
 const NAV = [
@@ -16,6 +18,8 @@ const NAV = [
   { href: "/dashboard/users", label: "Users", icon: Users, exact: false },
   { href: "/dashboard/meetups", label: "Meetups", icon: CalendarDays, exact: false },
   { href: "/dashboard/reports", label: "Reports", icon: Flag, exact: false },
+  { href: "/dashboard/content", label: "Content", icon: FileText, exact: false },
+  { href: "/dashboard/banners", label: "Banners", icon: Image, exact: false },
   { href: "/dashboard/broadcast", label: "Broadcast", icon: Megaphone, exact: false },
   { href: "/dashboard/lessons", label: "Lessons", icon: GraduationCap, exact: false },
 ] as const;
