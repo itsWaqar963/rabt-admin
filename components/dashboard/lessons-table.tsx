@@ -24,6 +24,9 @@ export type LessonRow = {
   submitterName: string | null;
   submitterAvatar: string | null;
   contributionCount: number;
+  is_own_channel: boolean;
+  channel_title: string | null;
+  channel_avatar_url: string | null;
   created_at: string | null;
 };
 
@@ -141,6 +144,27 @@ function LessonDetailModal({
             </dd>
           </div>
           <div>
+            <dt className="font-medium text-zinc-500">Own channel</dt>
+            <dd className="mt-0.5 text-zinc-200">
+              {row.is_own_channel ? "Yes" : "No"}
+            </dd>
+          </div>
+          {row.channel_title ? (
+            <div>
+              <dt className="font-medium text-zinc-500">Channel</dt>
+              <dd className="mt-1 flex items-center gap-2">
+                {row.channel_avatar_url ? (
+                  <img
+                    src={row.channel_avatar_url}
+                    alt=""
+                    className="size-6 rounded-full border border-zinc-700 object-cover"
+                  />
+                ) : null}
+                <span className="text-zinc-200">{row.channel_title}</span>
+              </dd>
+            </div>
+          ) : null}
+          <div>
             <dt className="font-medium text-zinc-500">Status</dt>
             <dd className="mt-0.5 capitalize text-zinc-200">{row.status}</dd>
           </div>
@@ -183,6 +207,7 @@ function CreateLessonModal({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [correctIndex, setCorrectIndex] = useState(0);
+  const [isOwnChannel, setIsOwnChannel] = useState(false);
 
   return (
     <div
@@ -220,6 +245,7 @@ function CreateLessonModal({ onClose }: { onClose: () => void }) {
                 question,
                 options,
                 correct_index: correctIndex,
+                is_own_channel: isOwnChannel,
               }),
             });
             const json = (await res.json().catch(() => null)) as {
@@ -269,6 +295,16 @@ function CreateLessonModal({ onClose }: { onClose: () => void }) {
               className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-emerald-700 focus:outline-none"
             />
           </div>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-zinc-300">
+            <input
+              type="checkbox"
+              checked={isOwnChannel}
+              disabled={pending}
+              onChange={(e) => setIsOwnChannel(e.target.checked)}
+              className="accent-emerald-500"
+            />
+            <span>This is my own YouTube channel</span>
+          </label>
           <div className="space-y-1">
             <label htmlFor="cl-question" className="font-medium text-zinc-400">
               Question

@@ -41,7 +41,7 @@ export default async function LessonsPage() {
   const { data, error } = await supabase
     .from("lesson_submissions")
     .select(
-      "id, youtube_url, question, options, correct_index, status, submitter_id, created_at",
+      "id, youtube_url, question, options, correct_index, status, submitter_id, created_at, is_own_channel, channel_title, channel_avatar_url",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -104,6 +104,9 @@ export default async function LessonsPage() {
         submitterName: profile?.full_name ?? null,
         submitterAvatar: profile?.avatar_url ?? null,
         contributionCount: contributionCounts.get(submitterId) ?? 1,
+        is_own_channel: r.is_own_channel === true,
+        channel_title: (r.channel_title as string | null) ?? null,
+        channel_avatar_url: (r.channel_avatar_url as string | null) ?? null,
         created_at: (r.created_at as string | null) ?? null,
       };
     })

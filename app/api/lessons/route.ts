@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { verifyIsAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
+import { fetchYoutubeChannelMeta } from "@/lib/youtube-oembed";
 
 function parseOptions(raw: unknown): [string, string, string, string] | null {
   if (!Array.isArray(raw) || raw.length !== 4) return null;
@@ -53,11 +54,13 @@ export async function POST(request: Request) {
     question,
     options: rawOptions,
     correct_index: correctIndex,
+    is_own_channel: isOwnChannel,
   } = payload as {
     youtube_url?: unknown;
     question?: unknown;
     options?: unknown;
     correct_index?: unknown;
+    is_own_channel?: unknown;
   };
 
   if (typeof youtubeUrl !== "string" || !youtubeUrl.trim()) {
@@ -94,9 +97,11 @@ export async function POST(request: Request) {
     );
   }
 
+  const trimmedUrl = youtubeUrl.trim();
+  const channelMeta = await fetchYoutubeChannelMeta(trimmedUrl);
   const now = new Date().toISOString();
   const { error } = await supabase.from("lesson_submissions").insert({
-    youtube_url: youtubeUrl.trim(),
+    youtube_url: trimmedUrl,
     question: question.trim(),
     options,
     correct_index: correctIndex,
@@ -104,6 +109,9 @@ export async function POST(request: Request) {
     submitter_id: user.id,
     reviewed_by: user.id,
     reviewed_at: now,
+    is_own_channel: isOwnChannel === true,
+    channel_title: channelMeta.channelTitle,
+    channel_avatar_url: channelMeta.channelAvatarUrl,
   });
 
   if (error) {
