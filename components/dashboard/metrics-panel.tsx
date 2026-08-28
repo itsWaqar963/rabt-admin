@@ -3,14 +3,18 @@
 import type { DashboardMetrics } from "@/lib/metrics";
 import { useMetricsContext } from "@/components/dashboard/metrics-provider";
 
-const CARDS: {
+type MetricCard = {
   key: keyof DashboardMetrics;
   title: string;
-}[] = [
+};
+
+const METRIC_CARDS: MetricCard[] = [
   { key: "totalUsers", title: "Total Users" },
   { key: "onlineNow", title: "Online Now" },
   { key: "offline", title: "Offline" },
   { key: "totalMeetups", title: "Total Meetups" },
+  { key: "liveMeetups", title: "Live Now" },
+  { key: "expiredMeetups", title: "Expired" },
   { key: "openReports", title: "Open Reports" },
 ];
 
@@ -49,8 +53,8 @@ export function MetricsPanel() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {CARDS.map((card) => (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {METRIC_CARDS.map((card) => (
           <div
             key={card.key}
             className="rounded-md border border-zinc-800 bg-zinc-900/50 p-4"
@@ -61,6 +65,15 @@ export function MetricsPanel() {
             </p>
           </div>
         ))}
+        <div className="rounded-md border border-zinc-800 bg-zinc-900/50 p-4">
+          <p className="text-sm font-medium text-zinc-200">Trust ratings</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-50">
+            —
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-500">
+            Post-beta reflection loop
+          </p>
+        </div>
       </div>
     </div>
   );

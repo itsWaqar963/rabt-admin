@@ -1,6 +1,10 @@
 "use client";
 
-import { dismissReport } from "@/lib/moderation";
+import {
+  deleteMeetup,
+  dismissReport,
+  setProfileBanned,
+} from "@/lib/moderation";
 import { formatRelative, shortId, truncate } from "@/lib/format";
 import { ConfirmActionButton } from "@/components/dashboard/confirm-action-button";
 import {
@@ -20,6 +24,24 @@ export type UnifiedReport = {
   reason: string | null;
   created_at: string | null;
 };
+
+async function banUserAndDismiss(
+  reportId: string,
+  userId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const ban = await setProfileBanned(userId, true);
+  if (!ban.ok) return ban;
+  return dismissReport("user", reportId);
+}
+
+async function deleteMeetupAndDismiss(
+  reportId: string,
+  meetupId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const del = await deleteMeetup(meetupId);
+  if (!del.ok) return del;
+  return dismissReport("meetup", reportId);
+}
 
 export function ReportsTable({ rows }: { rows: UnifiedReport[] }) {
   if (rows.length === 0) {
@@ -79,12 +101,31 @@ export function ReportsTable({ rows }: { rows: UnifiedReport[] }) {
                 {formatRelative(row.created_at)}
               </Td>
               <Td>
-                <ConfirmActionButton
-                  label="Dismiss"
-                  confirmMessage="Dismiss (delete) this report?"
-                  variant="danger"
-                  action={() => dismissReport(row.kind, row.id)}
-                />
+                <div className="flex flex-wrap gap-1">
+                  {row.kind === "user" ? (
+                    <ConfirmActionButton
+                      label="Ban user"
+                      confirmMessage="Ban this user and dismiss the report?"
+                      variant="danger"
+                      action={() => banUserAndDismiss(row.id, row.target_id)}
+                    />
+                  ) : (
+                    <ConfirmActionButton
+                      label="Delete meetup"
+                      confirmMessage="Delete this meetup and dismiss the report?"
+                      variant="danger"
+                      action={() =>
+                        deleteMeetupAndDismiss(row.id, row.target_id)
+                      }
+                    />
+                  )}
+                  <ConfirmActionButton
+                    label="Dismiss"
+                    confirmMessage="Dismiss (delete) this report?"
+                    variant="default"
+                    action={() => dismissReport(row.kind, row.id)}
+                  />
+                </div>
               </Td>
             </tr>
           );

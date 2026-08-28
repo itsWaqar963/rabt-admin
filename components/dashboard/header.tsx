@@ -19,8 +19,8 @@ export function Header({ email, children }: HeaderProps) {
       icon: Users,
     },
     {
-      label: "Meetups",
-      value: metrics ? metrics.totalMeetups.toLocaleString() : "—",
+      label: "Live meetups",
+      value: metrics ? metrics.liveMeetups.toLocaleString() : "—",
       icon: CalendarDays,
     },
     {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isMeetupLive } from "@/lib/meetup-lifecycle";
 import { ONLINE_THRESHOLD_MS } from "@/lib/presence";
 
 export type DashboardMetrics = {
@@ -6,6 +7,8 @@ export type DashboardMetrics = {
   onlineNow: number;
   offline: number;
   totalMeetups: number;
+  liveMeetups: number;
+  expiredMeetups: number;
   openReports: number;
 };
 
@@ -38,7 +41,7 @@ export async function fetchDashboardMetrics(
           .from("profiles")
           .select("*", { count: "exact", head: true })
           .gte("last_seen_at", since),
-        supabase.from("meetups").select("*", { count: "exact", head: true }),
+        supabase.from("meetups").select("id, date, time"),
         supabase
           .from("user_reports")
           .select("*", { count: "exact", head: true }),
@@ -57,11 +60,15 @@ export async function fetchDashboardMetrics(
       onlineRes.count,
       onlineRes.error,
     );
-    const totalMeetups = countOrThrow(
-      "meetups",
-      meetupsRes.count,
-      meetupsRes.error,
-    );
+    if (meetupsRes.error) {
+      throw new Error(`meetups: ${meetupsRes.error.message}`);
+    }
+    const meetupRows = meetupsRes.data ?? [];
+    const totalMeetups = meetupRows.length;
+    const liveMeetups = meetupRows.filter((row) =>
+      isMeetupLive(row.date, row.time),
+    ).length;
+    const expiredMeetups = Math.max(0, totalMeetups - liveMeetups);
     const userReports = countOrThrow(
       "user_reports",
       userReportsRes.count,
@@ -83,6 +90,8 @@ export async function fetchDashboardMetrics(
         onlineNow,
         offline,
         totalMeetups,
+        liveMeetups,
+        expiredMeetups,
         openReports,
       },
     };
